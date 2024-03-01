@@ -1,47 +1,35 @@
-version: '3.7'
-#список контейнероа
+version: '3.9'
+
 services:
-  mysql_srv:
-    container_name: mysql_srv #название контейнера
-    image: mysql:8.0 #образ
-    tty: true
-    #переменные окружения
-    environment:
-      MYSQL_DATABASE: testdb #название главной бд
-      MYSQL_ROOT_PASSWORD: arlalalala #пароль пользователя 'root'
-      SERVICE_TAGS: dev
-      SERVICE_NAME: mysql
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - mysql_log:/var/log/mysql
-    # проверка жизнеспособности сервера
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-    #здесь указать созданную сеть
-    networks:
-      - net
-  pma_srv:
-    container_name: phpmyadmin
-    image: phpmyadmin/phpmyadmin
-    #здесь мы указываем, что PMA будет обращаться к контейнеру
-    #при этом в контейнере mysql мы не открывали порты - они доступны только внутри сети
-    environment:
-      PMA_HOST: mysql_srv
-      PMA_PORT: 3306
-    depends_on:
-      - mysql_srv
-    #порты, доступные снаружи
+  kotlinapp:
+    container_name: webapi
+    image: raewda/kotlin-api
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DB_URL: ${DB_URL}
+        PG_USER: ${PG_USER}
+        PG_PASSWORD: ${PG_PASSWORD}
     ports:
-      - 80:80
-    networks:
-      - net
-#здесь мы указываем, что будем использовать уже созданную ранее сеть
-networks:
-  net:
-    external: true
-#так же указываем хранилища
+      - "8080:8080" 
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/postgres
+      PG_USER: postgres
+      PG_PASSWORD: postgres
+    depends_on:
+      - db
+  db:
+    container_name: db
+    image: postgres:12
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
 volumes:
-  mysql_data:
-    external: true
-  mysql_log:
-    external: true
+  pgdata: {}
