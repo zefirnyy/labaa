@@ -1,0 +1,47 @@
+version: '3.7'
+#список контейнероа
+services:
+  mysql_srv:
+    container_name: mysql_srv #название контейнера
+    image: mysql:8.0 #образ
+    tty: true
+    #переменные окружения
+    environment:
+      MYSQL_DATABASE: testdb #название главной бд
+      MYSQL_ROOT_PASSWORD: arlalalala #пароль пользователя 'root'
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mysql_log:/var/log/mysql
+    # проверка жизнеспособности сервера
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+    #здесь указать созданную сеть
+    networks:
+      - net
+  pma_srv:
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    #здесь мы указываем, что PMA будет обращаться к контейнеру
+    #при этом в контейнере mysql мы не открывали порты - они доступны только внутри сети
+    environment:
+      PMA_HOST: mysql_srv
+      PMA_PORT: 3306
+    depends_on:
+      - mysql_srv
+    #порты, доступные снаружи
+    ports:
+      - 80:80
+    networks:
+      - net
+#здесь мы указываем, что будем использовать уже созданную ранее сеть
+networks:
+  net:
+    external: true
+#так же указываем хранилища
+volumes:
+  mysql_data:
+    external: true
+  mysql_log:
+    external: true
